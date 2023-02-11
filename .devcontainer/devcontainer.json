@@ -2,6 +2,7 @@
   "image": "mcr.microsoft.com/devcontainers/universal:2",
   "features": {
     "ghcr.io/eitsupi/devcontainer-features/julia:0": {},
+    "ghcr.io/iterative/features/nvtop:1": {},
     "ghcr.io/devcontainers/features/nvidia-cuda:1": {
       "installCudnn": true
     }
