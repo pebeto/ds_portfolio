@@ -31,7 +31,7 @@ Train a NN to determine if student will approve a course, based on this rules:
 md"### Generating grades data"
 
 # ╔═╡ 65a14ee6-799d-4ea1-8e57-041e48697b1e
-generatedata(::Int64) = rand(0:20, 3) |> Vector{Int32}
+generatedata() = rand(0:20, 3) |> Vector{Int32}
 
 # ╔═╡ 009e3758-2e58-4099-98cd-fdb9ef0ae5fc
 checkcriteria(t) = (map(x -> x>11, t) |> sum > 1) |> Int32
@@ -40,7 +40,7 @@ checkcriteria(t) = (map(x -> x>11, t) |> sum > 1) |> Int32
 n_student = 100_000
 
 # ╔═╡ da97fc2e-bcba-4f9a-bc23-402efc4b5751
-generated_data = map(generatedata, 1:n_student)
+generated_data = map(_ -> generatedata(), 1:n_student)
 
 # ╔═╡ 54ec2c6a-2246-4747-8ecd-fbf41b3c0974
 data_x = reduce(hcat, generated_data)
