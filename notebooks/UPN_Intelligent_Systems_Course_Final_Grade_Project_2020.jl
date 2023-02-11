@@ -58,7 +58,7 @@ s_data_x, s_data_y = MLUtils.shuffleobs((data_x, data_y))
 train_data, test_data = MLUtils.splitobs((s_data_x, s_data_y); at=0.8)
 
 # ╔═╡ a376c95e-276f-4702-8eaf-1da4456e8292
-train_data_loader = DataLoader(train_data, batchsize=5)
+train_data_loader = DataLoader(train_data, batchsize=1000)
 
 # ╔═╡ bb3a8d96-7a4a-49cd-82cc-2d2fbc7b2551
 test_data_loader = DataLoader(test_data)
@@ -69,14 +69,9 @@ md"### Defining model"
 # ╔═╡ ab8a93b6-c8fe-458d-8d81-87f43eeed401
 model = Chain(
 	Dense(3 => 16, relu),
-	Dense(16 => 32, relu),
-	Dense(32 => 16, relu),
-	Dense(16 => 1, sigmoid)
+	Dense(16 => 8, relu),
+	Dense(8 => 1, sigmoid)
 ) |> gpu
-
-
-# ╔═╡ 3a76cfc3-1582-45d2-9b17-31a29c8868dc
-parameters = Flux.params(model)
 
 # ╔═╡ 4c70b011-f29d-4034-a7c2-b42a1c5de481
 optimizer = Adam(0.05)
@@ -88,23 +83,22 @@ loss(x, y) = Flux.binarycrossentropy(model(x), y) |> gpu
 md"### Training phase"
 
 # ╔═╡ 88217c9f-8ba1-4827-93ba-e25d9cc5a82d
-epochs = 1000
-
-# ╔═╡ 75bf5f82-3e85-4d6b-be97-bac21d5f4118
-losses = Float32[]
+epochs = 100
 
 # ╔═╡ 7dcf1546-9c9d-4e7e-9cb9-4fa553e3d83d
-@progress for e in 1:epochs
-	for d in train_data_loader
-		gs = gradient(parameters) do
-			l = loss(d...)
+begin
+	train_losses = Float32[]
+	test_losses = Float32[]
+	
+	@progress for e in 1:epochs
+		for d in train_data_loader
+			gs = gradient(Flux.params(model)) do
+				l = loss(d...)
+			end
+			Flux.update!(optimizer, Flux.params(model), gs)
 		end
-		Flux.update!(optimizer, parameters, gs)
-	end
-	epoch_loss = loss(train_data_loader.data[1], train_data_loader.data[2])
-	push!(losses, epoch_loss)
-	if e % 100 == 0
-		@show epoch_loss
+		push!(train_losses, loss(train_data_loader.data...))
+		push!(test_losses, loss(test_data_loader.data...))
 	end
 end
 
@@ -114,32 +108,37 @@ md"### Testing phase"
 # ╔═╡ 00a1126c-27e5-458a-a007-36bd57b2b16e
 accuracy(y, Y) = mean(Y .== y)
 
-# ╔═╡ ab1f0b3c-d7db-433f-b8a7-e7bc4a3da5e5
-test_pred = Int32[]
-
 # ╔═╡ 2febbda9-0424-496e-b966-c200e09f8f2a
-for (x, y) in test_data_loader
-	pred = round(Int32, model(x)[1])
-	append!(test_pred, pred)
+begin
+	test_pred = Int32[]
+	test_truth = test_data_loader.data[2]
+	
+	for (x, y) in test_data_loader
+		pred = round(Int32, model(x)[1])
+		append!(test_pred, pred)
+	end
 end
 
 # ╔═╡ 2e33bc88-2d55-4ed8-8ca2-0ceb5a68c9a5
-incorrect_predictions = test_data_loader.data[2] .- test_pred' |> sum |> abs
+incorrect_predictions = test_truth .- test_pred' |> sum |> abs
 
 # ╔═╡ 5d8d2eee-6c62-4298-9bfa-9e3c6854258e
 @info "Correct predictions: $(size(test_pred)[1] - incorrect_predictions) - Incorrect: $incorrect_predictions"
 
 # ╔═╡ 13f36526-ba28-4111-a821-c34d254efb59
-mae = Metrics.mae(test_pred', test_data_loader.data[2])
+mae = Metrics.mae(test_pred', test_truth)
 
 # ╔═╡ d85ef066-4227-4e0a-a197-f1fd8238533d
-mse = Metrics.mse(test_pred', test_data_loader.data[2])
+mse = Metrics.mse(test_pred', test_truth)
 
 # ╔═╡ ed63cba7-7140-4797-9cd5-9260d7aa339e
-acc = accuracy(test_pred', test_data_loader.data[2])
+acc = accuracy(test_pred', test_truth)
 
 # ╔═╡ 0ec852f4-9b12-4c6e-912a-90aa91374c30
-plot(1:epochs, losses, title="Loss over epochs: $epochs")
+begin
+	plot(1:epochs, train_losses, title="Loss over epochs: $epochs", label="Train")
+	plot!(1:epochs, test_losses, label="Test")
+end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -166,7 +165,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.8.5"
 manifest_format = "2.0"
-project_hash = "c71b4c98eb3d287f3930b8fd5ad3aaad3cf1f63e"
+project_hash = "c1cd13cc396745532969e2a1a88e62d085e0ba10"
 
 [[deps.AbstractFFTs]]
 deps = ["ChainRulesCore", "LinearAlgebra"]
@@ -1542,16 +1541,13 @@ version = "1.4.1+0"
 # ╠═bb3a8d96-7a4a-49cd-82cc-2d2fbc7b2551
 # ╟─e27cba6c-1d73-4930-9ec9-8b42be4bcf09
 # ╠═ab8a93b6-c8fe-458d-8d81-87f43eeed401
-# ╠═3a76cfc3-1582-45d2-9b17-31a29c8868dc
 # ╠═4c70b011-f29d-4034-a7c2-b42a1c5de481
 # ╠═53052d95-ff25-4275-8c43-ad2cdf2993b9
 # ╟─f548c72f-cfab-4873-83eb-929a34276bfc
 # ╠═88217c9f-8ba1-4827-93ba-e25d9cc5a82d
-# ╠═75bf5f82-3e85-4d6b-be97-bac21d5f4118
 # ╠═7dcf1546-9c9d-4e7e-9cb9-4fa553e3d83d
 # ╟─f5e1c549-7046-4696-866b-f54572dc8a10
 # ╠═00a1126c-27e5-458a-a007-36bd57b2b16e
-# ╠═ab1f0b3c-d7db-433f-b8a7-e7bc4a3da5e5
 # ╠═2febbda9-0424-496e-b966-c200e09f8f2a
 # ╠═2e33bc88-2d55-4ed8-8ca2-0ceb5a68c9a5
 # ╠═5d8d2eee-6c62-4298-9bfa-9e3c6854258e
