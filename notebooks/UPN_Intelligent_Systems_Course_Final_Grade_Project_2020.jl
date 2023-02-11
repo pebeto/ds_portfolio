@@ -51,8 +51,11 @@ data_y = generated_data' .|> checkcriteria
 # ╔═╡ aa7b6623-9d00-47ff-85c0-8d492fac7534
 md"### Preparing data"
 
+# ╔═╡ 22093640-3611-4991-92f3-43ea485d7bd6
+norm_data_x = Flux.normalise(data_x) |> Matrix{Float32}
+
 # ╔═╡ d065fa71-ae1a-4969-adb4-8c09d12d7c35
-s_data_x, s_data_y = MLUtils.shuffleobs((data_x, data_y))
+s_data_x, s_data_y = MLUtils.shuffleobs((norm_data_x, data_y))
 
 # ╔═╡ 11bae8e5-5dc2-4f20-9d0e-ab3a55dbff1c
 train_data, test_data = MLUtils.splitobs((s_data_x, s_data_y); at=0.8)
@@ -67,14 +70,16 @@ test_data_loader = DataLoader(test_data)
 md"### Defining model"
 
 # ╔═╡ ab8a93b6-c8fe-458d-8d81-87f43eeed401
-model = Chain(
-	Dense(3 => 16, relu),
-	Dense(16 => 8, relu),
-	Dense(8 => 1, sigmoid)
-) |> gpu
+begin
+	model = Chain(
+		Dense(3 => 8, relu),
+		Dense(8 => 1, sigmoid)
+	) |> gpu
+	optimizer = Adam(0.05)
+end
 
-# ╔═╡ 4c70b011-f29d-4034-a7c2-b42a1c5de481
-optimizer = Adam(0.05)
+# ╔═╡ 0b9a567d-2345-4d39-9ec3-c8e176823534
+model
 
 # ╔═╡ 53052d95-ff25-4275-8c43-ad2cdf2993b9
 loss(x, y) = Flux.binarycrossentropy(model(x), y) |> gpu
@@ -83,7 +88,7 @@ loss(x, y) = Flux.binarycrossentropy(model(x), y) |> gpu
 md"### Training phase"
 
 # ╔═╡ 88217c9f-8ba1-4827-93ba-e25d9cc5a82d
-epochs = 100
+epochs = 15
 
 # ╔═╡ 7dcf1546-9c9d-4e7e-9cb9-4fa553e3d83d
 begin
@@ -1535,13 +1540,14 @@ version = "1.4.1+0"
 # ╠═54ec2c6a-2246-4747-8ecd-fbf41b3c0974
 # ╠═a933c718-3bcb-4bec-8a3c-c5ecbbd2931e
 # ╟─aa7b6623-9d00-47ff-85c0-8d492fac7534
+# ╠═22093640-3611-4991-92f3-43ea485d7bd6
 # ╠═d065fa71-ae1a-4969-adb4-8c09d12d7c35
 # ╠═11bae8e5-5dc2-4f20-9d0e-ab3a55dbff1c
 # ╠═a376c95e-276f-4702-8eaf-1da4456e8292
 # ╠═bb3a8d96-7a4a-49cd-82cc-2d2fbc7b2551
 # ╟─e27cba6c-1d73-4930-9ec9-8b42be4bcf09
 # ╠═ab8a93b6-c8fe-458d-8d81-87f43eeed401
-# ╠═4c70b011-f29d-4034-a7c2-b42a1c5de481
+# ╠═0b9a567d-2345-4d39-9ec3-c8e176823534
 # ╠═53052d95-ff25-4275-8c43-ad2cdf2993b9
 # ╟─f548c72f-cfab-4873-83eb-929a34276bfc
 # ╠═88217c9f-8ba1-4827-93ba-e25d9cc5a82d
