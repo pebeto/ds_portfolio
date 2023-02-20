@@ -1,0 +1,9 @@
+[deps]
+BetaML = "024491cd-cc6b-443e-8034-08ea7eb7db2b"
+Flux = "587475ba-b771-5e3f-ad9e-33799f191a9c"
+MLJ = "add582a8-e3ab-11e8-2d5e-e98b27df1bc7"
+MLJModels = "d491faf4-2d78-11e9-2867-c94bc002c0b7"
+MLJXGBoostInterface = "54119dfa-1dab-4055-a167-80440f4f7a91"
+Pluto = "c3e4b0f8-55cb-11ea-2926-15256bba5781"
+StatsPlots = "f3b207a7-027a-5e70-b257-86293d7955fd"
+XGBoost = "009559a3-9522-5dbb-924b-0b6ed2b22bb9"
